@@ -5,6 +5,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --secondary: #18181A;
+  --accent: #2D82FE;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,3 +21,4 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
