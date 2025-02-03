@@ -1,5 +1,4 @@
-import { func } from 'ts-interface-checker';
-import Asset from '@/types/asset';
+import { refinedAsset } from '@/types/refinedAssets';
 
 function isValidPath(path: string) {
   // Ensure that all parts of the slug are valid
@@ -9,8 +8,6 @@ function isValidPath(path: string) {
 
 export async function fetchContentByTag(slug: string[] = []) {
   const path = slug ? slug.join('/') : '';
-
-  // console.log('fetchUrl',`${process.env.BASEURL}/entries?&metadata.tags.sys.id[all]=${path}`)
 
   if (!isValidPath(path)) {
     // Ensure we only fetch valid paths. Otherwise, the server will throw an error
@@ -28,13 +25,27 @@ export async function fetchContentByTag(slug: string[] = []) {
 
   const data = await response.json();
 
-  // console.log('server data', data);
-
   if (!data || !data.items || data.items.length === 0) {
     return undefined;
   }
 
   return data;
+}
+
+export async function fetchPageWithLinkedItems(pageType: string) {
+  const path = `${process.env.BASEURL}entries?&include=2&content_type=${pageType}&fields.siteContent`;
+  if (!isValidPath(path)) {
+    // Ensure we only fetch valid paths. Otherwise, the server will throw an error
+    return { data: undefined, response: new Response(null, { status: 404 }) };
+  }
+
+  const response = await fetch(path || '', {
+    headers: {
+      Authorization: `Bearer ${process.env.access_token}`,
+    },
+  });
+
+  return await response.json();
 }
 
 async function fetchAsset(id?: string) {
@@ -51,12 +62,12 @@ export async function getAssetsById(idList?: string[]) {
     throw new Error('idList missing');
   }
 
-  let assets: any = [];
+  const assets: Array<refinedAsset> = [];
 
   for (const id of idList) {
     const asset = await fetchAsset(id);
 
-    const formatedAsset: Asset = {
+    const formatedAsset: refinedAsset = {
       url: `https:${asset.fields.file.url}`,
       alt: asset.fields.description,
       width: asset.fields.file.details.image.width,
@@ -66,7 +77,7 @@ export async function getAssetsById(idList?: string[]) {
     assets.push(formatedAsset);
   }
   // If only one asset was fetched, then it will be an object which is not surrounded by an array
-  if (assets.length <= 1) assets = assets[0];
+  if (assets.length === 1) return assets[0];
 
   return assets;
 }
